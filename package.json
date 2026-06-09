@@ -1,13 +1,13 @@
 {
   "name": "taronote",
   "version": "1.0.0",
-  "description": "A floating macOS snippets note list for reusable customer messages.",
+  "description": "A floating macOS Note app for saving reusable phrases.",
   "author": "Taro",
   "main": "out/main/index.js",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/sync-electron-dev-icon.mjs && electron-vite dev",
-    "start": "node scripts/sync-electron-dev-icon.mjs && electron-vite dev",
+    "dev": "electron-vite dev",
+    "start": "electron-vite dev",
     "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.web.json --noEmit",
     "build": "npm run typecheck && electron-vite build",
     "preview": "electron-vite preview",

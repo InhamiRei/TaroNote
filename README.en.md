@@ -1,11 +1,11 @@
 <div align="center">
-  <img src="./assets/app-icons/taronote.png" width="128" alt="TaroNote 应用图标" />
+  <img src="./assets/app-icons/taronote.png" width="128" alt="TaroNote app icon" />
   <h1>TaroNote</h1>
-  <p><strong>一个 macOS 悬浮 Note 应用，用来保存常用短语。</strong></p>
+  <p><strong>A floating macOS Note app for saving reusable phrases.</strong></p>
   <p>
-    简体中文
+    <a href="./README.md">简体中文</a>
     ·
-    <a href="./README.en.md">English</a>
+    English
   </p>
   <p>
     <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-111827?logo=apple&logoColor=white" />
@@ -16,32 +16,32 @@
   </p>
 </div>
 
-## 开发运行
+## Development
 
 ```bash
 nvm install
 nvm use
 ```
 
-安装依赖并启动开发环境：
+Install dependencies and start the development environment:
 
 ```bash
 npm install
 npm start
 ```
 
-## 构建检查
+## Build Check
 
 ```bash
 npm run build
 ```
 
-## 数据位置
+## Data Location
 
-应用数据保存在：
+App data is saved at:
 
 ```text
 ~/Library/Application Support/TaroNote/data.json
 ```
 
-第一版只保存手动维护的纯文本 Note，不会自动记录剪贴板历史，也不会自动粘贴到其他应用。
+The first version only saves plain-text notes that you maintain manually. It does not automatically record clipboard history or paste into other apps.
