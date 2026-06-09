@@ -6,10 +6,10 @@ import {
   Moon,
   MoveDiagonal2,
   Pencil,
+  Pin,
   Plus,
   Search,
   Settings,
-  Star,
   Sun,
   Tag,
   Trash2,
@@ -207,7 +207,7 @@ const formatZhDateTime = (date: Date) => {
   return `${year}-${month}-${day} ${hour}:${minute}`
 }
 
-// 将更新时间按当前语言格式化；中文界面使用完整日期时间，避免“今天 14:50”信息不够明确。
+// 将更新时间按当前语言格式化；中文界面使用完整日期时间，避免"今天 14:50"信息不够明确。
 const formatDateLabel = (value: string, language: LanguageMode) => {
   const date = new Date(value)
 
@@ -229,9 +229,9 @@ const formatDateLabel = (value: string, language: LanguageMode) => {
   }).format(date)
 }
 
-// 置顶 Note 永远排在前面，其余再按更新时间、复制时间和创建时间排序。
-const getNoteActivityTime = (note: NoteItem) => {
-  const dates = [note.updatedAt, note.lastCopiedAt, note.createdAt]
+// 置顶 Note 永远排在前面，其余按 sortOrder、更新时间和创建时间排序，复制不影响排序。
+const getNoteEditTime = (note: NoteItem) => {
+  const dates = [note.updatedAt, note.createdAt]
     .filter((value): value is string => Boolean(value))
     .map((value) => new Date(value).getTime())
     .filter((value) => Number.isFinite(value))
@@ -239,22 +239,29 @@ const getNoteActivityTime = (note: NoteItem) => {
   return dates.length ? Math.max(...dates) : 0
 }
 
-// 将活动时间转成 ISO 字符串，复用统一日期格式化逻辑。
-const getNoteActivityDate = (note: NoteItem) => {
-  const time = getNoteActivityTime(note)
-  return time ? new Date(time).toISOString() : note.createdAt
-}
-
 // 保留原始顺序作为最后兜底，避免时间完全相同时列表产生跳动。
 const sortNotesByActivity = (notes: NoteItem[]) => {
   return notes
     .map((note, index) => ({ note, index }))
-    .sort(
-      (left, right) =>
-        Number(right.note.favorite) - Number(left.note.favorite) ||
-        getNoteActivityTime(right.note) - getNoteActivityTime(left.note) ||
-        left.index - right.index
-    )
+    .sort((left, right) => {
+      // 置顶优先
+      const pinDiff = Number(right.note.favorite) - Number(left.note.favorite)
+      if (pinDiff !== 0) return pinDiff
+
+      // 如果两个 Note 都有 sortOrder，按 sortOrder 排序（越小越前）
+      const leftHasOrder = typeof left.note.sortOrder === 'number'
+      const rightHasOrder = typeof right.note.sortOrder === 'number'
+      if (leftHasOrder && rightHasOrder) {
+        const orderDiff = left.note.sortOrder! - right.note.sortOrder!
+        if (orderDiff !== 0) return orderDiff
+      }
+
+      // 没有 sortOrder 的按编辑时间降序
+      const timeDiff = getNoteEditTime(right.note) - getNoteEditTime(left.note)
+      if (timeDiff !== 0) return timeDiff
+
+      return left.index - right.index
+    })
     .map(({ note }) => note)
 }
 
@@ -767,13 +774,12 @@ function App() {
     showToast(t.copied)
   }
 
-  // 置顶状态复用 favorite 字段，保持数据结构不额外膨胀。
+  // 置顶状态复用 favorite 字段，不更新 updatedAt 避免卡片抖动。
   const togglePinned = async (note: NoteItem) => {
     if (!data) return
 
-    const updatedAt = new Date().toISOString()
     await savePayload({
-      notes: data.notes.map((item) => (item.id === note.id ? { ...item, favorite: !item.favorite, updatedAt } : item))
+      notes: data.notes.map((item) => (item.id === note.id ? { ...item, favorite: !item.favorite } : item))
     })
     showToast(note.favorite ? t.unpinnedToast : t.pinnedToast)
   }
@@ -890,10 +896,37 @@ function App() {
     updateSetting({ language: nextLanguage })
   }
 
+  // 拖动排序：重新计算所有 Note 的 sortOrder 并保存。
+  const reorderNotes = async (fromId: string, toId: string) => {
+    if (!data || fromId === toId) return
+
+    // 先获取当前排序结果
+    const sorted = sortNotesByActivity(data.notes)
+    const fromIndex = sorted.findIndex((n) => n.id === fromId)
+    const toIndex = sorted.findIndex((n) => n.id === toId)
+    if (fromIndex === -1 || toIndex === -1) return
+
+    // 移动元素
+    const moved = sorted.splice(fromIndex, 1)[0]
+    sorted.splice(toIndex, 0, moved)
+
+    // 重新编号 sortOrder
+    const reordered = new Map<string, number>()
+    sorted.forEach((note, idx) => reordered.set(note.id, idx))
+
+    await savePayload({
+      notes: data.notes.map((note) => ({
+        ...note,
+        sortOrder: reordered.get(note.id) ?? 0
+      }))
+    })
+  }
+
   const handleCopyNote = useStableCallback(copyNote)
   const handleEditNote = useStableCallback(openEditNote)
   const handleDeleteNote = useStableCallback(removeNote)
   const handleTogglePinned = useStableCallback(togglePinned)
+  const handleReorderNotes = useStableCallback(reorderNotes)
 
   if (!data) {
     return <div className="boot">TaroNote</div>
@@ -937,7 +970,7 @@ function App() {
               setActiveFilter('pinned')
             }}
           >
-            <Star className="sidebar-item-icon" size={18} />
+            <Pin className="sidebar-item-icon" size={18} />
             <span className="sidebar-item-label">{t.pinnedNotes}</span>
             <em className="sidebar-item-meta">{pinnedCount}</em>
           </button>
@@ -1075,6 +1108,7 @@ function App() {
             onEdit={handleEditNote}
             onDelete={handleDeleteNote}
             onTogglePinned={handleTogglePinned}
+            onReorder={handleReorderNotes}
             labels={t}
             language={language}
             canvasRef={notesCanvasRef}
@@ -1114,7 +1148,7 @@ function App() {
               />
             </div>
             <button className={`editor-pin ${draft.favorite ? 'active' : ''}`} onClick={() => setDraft({ ...draft, favorite: !draft.favorite })}>
-              <Star size={16} fill={draft.favorite ? 'currentColor' : 'none'} />
+              <Pin size={16} fill={draft.favorite ? 'currentColor' : 'none'} />
               <span>{draft.favorite ? t.pinned : t.pinNote}</span>
             </button>
           </div>
@@ -1203,47 +1237,83 @@ type NotesViewProps = {
   onEdit: (note: NoteItem) => void
   onDelete: (note: NoteItem) => Promise<void>
   onTogglePinned: (note: NoteItem) => Promise<void>
+  onReorder: (fromId: string, toId: string) => Promise<void>
 }
 
 type NoteCardProps = {
   note: NoteItem
   group?: NoteGroup
   isSelected: boolean
+  isDragOver: 'above' | 'below' | null
+  isDragging: boolean
   labels: AppLabels
   language: LanguageMode
   onCopy: (note: NoteItem) => Promise<void>
   onEdit: (note: NoteItem) => void
   onDelete: (note: NoteItem) => Promise<void>
   onTogglePinned: (note: NoteItem) => Promise<void>
+  onDragStart: (noteId: string) => void
+  onDragOver: (event: React.DragEvent, noteId: string) => void
+  onDragLeave: () => void
+  onDrop: (noteId: string) => void
+  onDragEnd: () => void
 }
 
 // Note 卡片拆成 memo 组件，键盘选择或搜索输入时避免 1000 条列表全部重新渲染。
-const NoteCard = memo(function NoteCard({ note, group, isSelected, labels, language, onCopy, onEdit, onDelete, onTogglePinned }: NoteCardProps) {
-  // 提前计算卡片展示文案，截断时可通过 title 悬浮查看完整内容。
-  const noteDateLabel = formatDateLabel(getNoteActivityDate(note), language)
+const NoteCard = memo(function NoteCard({
+  note, group, isSelected, isDragOver, isDragging, labels, language,
+  onCopy, onEdit, onDelete, onTogglePinned,
+  onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd
+}: NoteCardProps) {
+  // 卡片左上角只显示编辑时间，复制不影响显示。
+  const noteDateLabel = formatDateLabel(note.updatedAt || note.createdAt, language)
+
+  const dragOverClass = isDragOver === 'above' ? 'drop-above' : isDragOver === 'below' ? 'drop-below' : ''
 
   return (
-    <article className={`note-card ${isSelected ? 'selected' : ''} ${note.favorite ? 'pinned' : ''}`} onClick={() => void onCopy(note)}>
+    <article
+      className={`note-card ${isSelected ? 'selected' : ''} ${note.favorite ? 'pinned' : ''} ${isDragging ? 'dragging' : ''} ${dragOverClass}`}
+      draggable
+      onDragStart={(event) => {
+        event.dataTransfer.effectAllowed = 'move'
+        event.dataTransfer.setData('text/plain', note.id)
+        onDragStart(note.id)
+      }}
+      onDragOver={(event) => {
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'move'
+        onDragOver(event, note.id)
+      }}
+      onDragLeave={onDragLeave}
+      onDrop={(event) => {
+        event.preventDefault()
+        onDrop(note.id)
+      }}
+      onDragEnd={onDragEnd}
+      onClick={() => void onCopy(note)}
+    >
       <div className="note-date-row">
         <div className="note-date" title={noteDateLabel}>
           {noteDateLabel}
         </div>
-        {note.favorite && (
-          <span className="pin-badge">
-            <Star size={13} fill="currentColor" />
-            {labels.pinned}
-          </span>
-        )}
       </div>
       <div className="note-text" title={note.content}>
         {note.content}
       </div>
-      {group && (
+      {(group || note.favorite) && (
         <div className="note-footer">
-          <span className="note-category-badge" title={group.name}>
-            <span style={{ backgroundColor: group.color }} />
-            {group.name}
-          </span>
+          {group && (
+            <span className="note-category-badge" title={group.name}>
+              <span style={{ backgroundColor: group.color }} />
+              {group.name}
+            </span>
+          )}
+          {note.favorite && (
+            <span className="pin-badge">
+              <Pin size={13} fill="currentColor" />
+              {labels.pinned}
+            </span>
+          )}
         </div>
       )}
       <div className="card-actions">
@@ -1255,7 +1325,7 @@ const NoteCard = memo(function NoteCard({ note, group, isSelected, labels, langu
             void onTogglePinned(note)
           }}
         >
-          <Star size={16} fill={note.favorite ? 'currentColor' : 'none'} />
+          <Pin size={16} fill={note.favorite ? 'currentColor' : 'none'} />
         </button>
         <button
           title={labels.edit}
@@ -1281,15 +1351,48 @@ const NoteCard = memo(function NoteCard({ note, group, isSelected, labels, langu
 })
 
 // Note 列表视图只负责渲染和派发操作，具体数据修改留给上层 App。
-function NotesView({ notes, groups, selectedIndex, labels, language, canvasRef, emptyText, onCopy, onEdit, onDelete, onTogglePinned }: NotesViewProps) {
+function NotesView({ notes, groups, selectedIndex, labels, language, canvasRef, emptyText, onCopy, onEdit, onDelete, onTogglePinned, onReorder }: NotesViewProps) {
   // 列表渲染时只构建一次分类索引，避免每张卡片都线性查找分类。
   const groupsById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups])
+  const [dragNoteId, setDragNoteId] = useState<string | null>(null)
+  const [dropTarget, setDropTarget] = useState<{ id: string; position: 'above' | 'below' } | null>(null)
+
+  const handleDragStart = useCallback((noteId: string) => {
+    setDragNoteId(noteId)
+  }, [])
+
+  const handleDragOver = useCallback((event: React.DragEvent, noteId: string) => {
+    if (!dragNoteId || dragNoteId === noteId) return
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    const midY = rect.top + rect.height / 2
+    const position = event.clientY < midY ? 'above' : 'below'
+    setDropTarget({ id: noteId, position })
+  }, [dragNoteId])
+
+  const handleDragLeave = useCallback(() => {
+    setDropTarget(null)
+  }, [])
+
+  const handleDrop = useCallback((targetId: string) => {
+    if (!dragNoteId || dragNoteId === targetId) return
+
+    // 根据放置位置计算实际的目标位置
+    void onReorder(dragNoteId, targetId)
+    setDragNoteId(null)
+    setDropTarget(null)
+  }, [dragNoteId, onReorder])
+
+  const handleDragEnd = useCallback(() => {
+    setDragNoteId(null)
+    setDropTarget(null)
+  }, [])
 
   return (
     <section className="notes-canvas no-drag" ref={canvasRef}>
       <div className="notes-stack">
         {notes.map((note, index) => {
           const group = groupsById.get(note.groupId)
+          const isDragOver = dropTarget?.id === note.id ? dropTarget.position : null
 
           return (
             <NoteCard
@@ -1297,12 +1400,19 @@ function NotesView({ notes, groups, selectedIndex, labels, language, canvasRef, 
               note={note}
               group={group}
               isSelected={index === selectedIndex}
+              isDragOver={isDragOver}
+              isDragging={dragNoteId === note.id}
               labels={labels}
               language={language}
               onCopy={onCopy}
               onEdit={onEdit}
               onDelete={onDelete}
               onTogglePinned={onTogglePinned}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onDragEnd={handleDragEnd}
             />
           )
         })}

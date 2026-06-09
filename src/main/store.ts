@@ -128,7 +128,8 @@ const normalizeNotes = (value: unknown, groups: NoteGroup[]): NoteItem[] => {
       createdAt,
       updatedAt: isString(note.updatedAt) ? note.updatedAt : createdAt,
       copyCount: typeof note.copyCount === 'number' && note.copyCount >= 0 ? note.copyCount : 0,
-      lastCopiedAt: isString(note.lastCopiedAt) ? note.lastCopiedAt : undefined
+      lastCopiedAt: isString(note.lastCopiedAt) ? note.lastCopiedAt : undefined,
+      sortOrder: typeof note.sortOrder === 'number' ? note.sortOrder : undefined
     }
   })
 }
@@ -224,8 +225,7 @@ export class TaroNoteStore {
       return {
         ...note,
         copyCount: note.copyCount + 1,
-        lastCopiedAt: copiedAt,
-        updatedAt: copiedAt
+        lastCopiedAt: copiedAt
       }
     })
 

@@ -21,6 +21,7 @@ export type NoteItem = {
   updatedAt: string
   copyCount: number
   lastCopiedAt?: string
+  sortOrder?: number
 }
 
 export type AppSettings = {

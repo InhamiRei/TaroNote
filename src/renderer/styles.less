@@ -561,11 +561,7 @@ button.sidebar-item:hover,
 }
 
 .note-date-row {
-  display: flex;
   min-width: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
   margin-bottom: 16px;
 }
 
@@ -597,7 +593,7 @@ button.sidebar-item:hover,
 }
 
 .pin-badge {
-  color: var(--text);
+  color: var(--muted);
 }
 
 .note-text {
@@ -613,6 +609,8 @@ button.sidebar-item:hover,
 
 .note-footer {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 18px;
 }
 
@@ -656,6 +654,27 @@ button.sidebar-item:hover,
 
 .card-actions button.active {
   color: var(--text);
+}
+
+.note-card.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
+.note-card.drop-above {
+  box-shadow: 0 -3px 0 0 var(--line-strong), var(--shadow);
+}
+
+.note-card.drop-below {
+  box-shadow: 0 3px 0 0 var(--line-strong), var(--shadow);
+}
+
+.note-card[draggable] {
+  cursor: grab;
+}
+
+.note-card[draggable]:active {
+  cursor: grabbing;
 }
 
 .empty-state {
