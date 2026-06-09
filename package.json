@@ -31,20 +31,22 @@
     "typescript": "^5.7.2",
     "vite": "^5.4.11"
   },
-  "build": {
-    "appId": "com.taro.taronote",
-    "productName": "TaroNote",
-    "copyright": "Copyright © 2026 Taro",
-    "files": [
-      "out/**/*"
-    ],
-    "mac": {
-      "category": "public.app-category.productivity",
-      "icon": "assets/app-icons/taronote.icns",
-      "target": [
-        "dir"
-      ]
-    },
+    "build": {
+      "appId": "com.taro.taronote",
+      "productName": "TaroNote",
+      "copyright": "Copyright © 2026 Taro",
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "files": [
+        "out/**/*"
+      ],
+      "mac": {
+        "category": "public.app-category.productivity",
+        "icon": "assets/app-icons/taronote.icns",
+        "target": [
+          "dmg",
+          "zip"
+        ]
+      },
     "directories": {
       "output": "release"
     }
