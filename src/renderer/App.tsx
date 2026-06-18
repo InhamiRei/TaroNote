@@ -49,6 +49,7 @@ const messages = {
     closeToTray: '关闭时留在菜单栏',
     contentRequired: '内容不能为空',
     copied: '已复制',
+    copyCountText: (count: number) => `已复制 ${count} 次`,
     count: (count: number) => `${count} 条`,
     dark: '深色',
     delete: '删除',
@@ -1300,8 +1301,8 @@ const NoteCard = memo(function NoteCard({
       <div className="note-text" title={note.content}>
         {note.content}
       </div>
-      {(group || note.favorite) && (
-        <div className="note-footer">
+      <div className="note-footer">
+        <div className="note-footer-left">
           {group && (
             <span className="note-category-badge" title={group.name}>
               <span style={{ backgroundColor: group.color }} />
@@ -1315,7 +1316,10 @@ const NoteCard = memo(function NoteCard({
             </span>
           )}
         </div>
-      )}
+        <div className="note-footer-right">
+          <span className="copy-count">{labels.copyCountText(note.copyCount)}</span>
+        </div>
+      </div>
       <div className="card-actions">
         <button
           className={note.favorite ? 'active' : ''}

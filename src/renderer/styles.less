@@ -609,9 +609,27 @@ button.sidebar-item:hover,
 
 .note-footer {
   display: flex;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
   gap: 8px;
   margin-top: 18px;
+}
+
+.note-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.note-footer-right {
+  display: flex;
+  align-items: center;
+}
+
+.copy-count {
+  font-size: 12px;
+  opacity: 0.6;
 }
 
 .note-category-badge span {
