@@ -2,31 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import type { AppData, AppSettings, NoteGroup, NoteItem, SaveDataPayload } from '../shared/types'
-
-const DEFAULT_GROUP_ID = 'notes'
-
-const DEFAULT_SETTINGS: AppSettings = {
-  hideDock: false,
-  launchAtLogin: false,
-  alwaysOnTop: true,
-  globalShortcut: 'CommandOrControl+;',
-  theme: 'light',
-  language: 'zh',
-  window: {
-    width: 1200,
-    height: 800
-  },
-  closeToTray: true
-}
-
-const DEFAULT_GROUPS: NoteGroup[] = [
-  {
-    id: DEFAULT_GROUP_ID,
-    name: '默认',
-    color: '#dedede',
-    sortOrder: 0
-  }
-]
+import { DEFAULT_GROUP_ID, DEFAULT_GROUPS, DEFAULT_SETTINGS, createDefaultAppData, makeTitle, mergePayload } from '../shared/types'
 
 type UnknownRecord = Record<string, unknown>
 
@@ -38,18 +14,7 @@ const isRecord = (value: unknown): value is UnknownRecord => {
 // 字符串字段统一用这个类型保护，方便后续 trim 和默认值处理。
 const isString = (value: unknown): value is string => typeof value === 'string'
 
-// 所有写入时间统一用 ISO 字符串，方便排序、导出和跨时区读取。
 const nowIso = () => new Date().toISOString()
-
-// 创建首次启动的数据，只保留默认分类，让用户可以直接看到空列表状态。
-const createDefaultData = (): AppData => {
-  return {
-    schemaVersion: 1,
-    groups: [...DEFAULT_GROUPS],
-    notes: [],
-    settings: { ...DEFAULT_SETTINGS, window: { ...DEFAULT_SETTINGS.window } }
-  }
-}
 
 // 统一修正设置结构，兼容后续版本升级或用户导入的旧备份。
 const normalizeSettings = (value: unknown): AppSettings => {
@@ -100,7 +65,7 @@ const normalizeGroups = (value: unknown): NoteGroup[] => {
     : []
 
   if (!groups.length) {
-    return [...DEFAULT_GROUPS]
+    return DEFAULT_GROUPS.map((group) => ({ ...group }))
   }
 
   return groups.sort((a, b) => a.sortOrder - b.sortOrder)
@@ -117,11 +82,10 @@ const normalizeNotes = (value: unknown, groups: NoteGroup[]): NoteItem[] => {
 
   return value.filter(isRecord).map((note) => {
     const createdAt = isString(note.createdAt) ? note.createdAt : nowIso()
-    const titleFromContent = isString(note.content) ? note.content.split(/\s+/).filter(Boolean).join(' ').slice(0, 24) : ''
 
     return {
       id: isString(note.id) && note.id.trim() ? note.id : randomUUID(),
-      title: isString(note.title) && note.title.trim() ? note.title.trim() : titleFromContent || '未命名 Note',
+      title: isString(note.title) && note.title.trim() ? note.title.trim() : makeTitle(isString(note.content) ? note.content : ''),
       content: isString(note.content) ? note.content : '',
       groupId: isString(note.groupId) && groupIds.has(note.groupId) ? note.groupId : fallbackGroupId,
       favorite: typeof note.favorite === 'boolean' ? note.favorite : false,
@@ -137,7 +101,7 @@ const normalizeNotes = (value: unknown, groups: NoteGroup[]): NoteItem[] => {
 // 将任意输入规范化成当前版本的数据文件，所有入口都走这里。
 const normalizeData = (value: unknown): AppData => {
   if (!isRecord(value)) {
-    return createDefaultData()
+    return createDefaultAppData()
   }
 
   const groups = normalizeGroups(value.groups)
@@ -168,7 +132,7 @@ export class TaroNoteStore {
     mkdirSync(path.dirname(this.dataPath), { recursive: true })
 
     if (!existsSync(this.dataPath)) {
-      const data = createDefaultData()
+      const data = createDefaultAppData()
       this.write(data)
       return data
     }
@@ -181,7 +145,7 @@ export class TaroNoteStore {
     } catch {
       const backupPath = `${this.dataPath}.corrupt-${Date.now()}`
       renameSync(this.dataPath, backupPath)
-      const data = createDefaultData()
+      const data = createDefaultAppData()
       this.write(data)
       return data
     }
@@ -202,11 +166,7 @@ export class TaroNoteStore {
 
   // 渲染进程保存列表、分组或设置时统一走这里，先合并再规范化。
   update(payload: SaveDataPayload): AppData {
-    this.data = normalizeData({
-      ...this.data,
-      ...payload,
-      settings: payload.settings ? { ...this.data.settings, ...payload.settings } : this.data.settings
-    })
+    this.data = normalizeData(mergePayload(this.data, payload))
     this.write(this.data)
     return this.get()
   }

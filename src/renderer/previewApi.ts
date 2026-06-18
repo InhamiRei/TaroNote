@@ -1,4 +1,5 @@
 import type { AppData, AppSettings, SaveDataPayload, TaroNoteApi } from '../shared/types'
+import { createDefaultAppData, mergePayload } from '../shared/types'
 
 const previewKey = 'taronote-preview-data-v8'
 
@@ -15,37 +16,17 @@ export const getTaroNoteApi = (): TaroNoteApi => {
   return createPreviewApi()
 }
 
-// 创建浏览器预览数据，保持字段结构和主进程持久化数据一致。
+// 浏览器预览数据默认窗口尺寸比主进程更小，适合开发期视觉调试。
 const createPreviewData = (): AppData => {
+  const data = createDefaultAppData()
   return {
-    schemaVersion: 1,
-    groups: [
-      {
-        id: 'notes',
-        name: '默认',
-        color: '#dedede',
-        sortOrder: 0
-      }
-    ],
-    notes: [],
-    settings: {
-      hideDock: false,
-      launchAtLogin: false,
-      alwaysOnTop: true,
-      globalShortcut: 'CommandOrControl+;',
-      theme: 'light',
-      language: 'zh',
-      window: {
-        width: 380,
-        height: 560
-      },
-      closeToTray: true
-    }
+    ...data,
+    settings: { ...data.settings, window: { width: 380, height: 560 } }
   }
 }
 
 // 读取 localStorage 里的预览数据；损坏数据直接回落到默认状态。
-const readPreviewData = () => {
+const readPreviewData = (): AppData => {
   const raw = window.localStorage.getItem(previewKey)
   if (!raw) {
     return createPreviewData()
@@ -63,13 +44,6 @@ const writePreviewData = (data: AppData) => {
   window.localStorage.setItem(previewKey, JSON.stringify(data))
 }
 
-// 预览保存和主进程 store.update 保持同样的 settings 合并语义。
-const mergePreviewPayload = (data: AppData, payload: SaveDataPayload): AppData => ({
-  ...data,
-  ...payload,
-  settings: payload.settings ? { ...data.settings, ...payload.settings } : data.settings
-})
-
 // 开发预览 API 模拟 Electron IPC，让 renderer 能直接在浏览器里跑视觉调试。
 const createPreviewApi = (): TaroNoteApi => ({
   getState: async () => {
@@ -78,7 +52,7 @@ const createPreviewApi = (): TaroNoteApi => ({
     return data
   },
   saveData: async (payload: SaveDataPayload) => {
-    const data = mergePreviewPayload(readPreviewData(), payload)
+    const data = mergePayload(readPreviewData(), payload)
     writePreviewData(data)
     return data
   },
@@ -98,8 +72,7 @@ const createPreviewApi = (): TaroNoteApi => ({
           ? {
               ...item,
               copyCount: item.copyCount + 1,
-              lastCopiedAt: copiedAt,
-              updatedAt: copiedAt
+              lastCopiedAt: copiedAt
             }
           : item
       )

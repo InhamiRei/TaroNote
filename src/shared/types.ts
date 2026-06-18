@@ -74,3 +74,51 @@ export type TaroNoteApi = {
   toggleMaximize: () => Promise<void>
   onOpenSettings: (callback: () => void) => () => void
 }
+
+// ── 共享常量与工厂 ──────────────────────────────────────
+
+export const DEFAULT_GROUP_ID = 'notes'
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  hideDock: false,
+  launchAtLogin: false,
+  alwaysOnTop: true,
+  globalShortcut: 'CommandOrControl+;',
+  theme: 'light',
+  language: 'zh',
+  window: {
+    width: 1200,
+    height: 800
+  },
+  closeToTray: true
+}
+
+export const DEFAULT_GROUPS: NoteGroup[] = [
+  {
+    id: DEFAULT_GROUP_ID,
+    name: '默认',
+    color: '#dedede',
+    sortOrder: 0
+  }
+]
+
+// store.ts 和 previewApi.ts 共用同一份 payload 合并逻辑，保持结构同步。
+export const mergePayload = (data: AppData, payload: SaveDataPayload): AppData => ({
+  ...data,
+  ...payload,
+  settings: payload.settings ? { ...data.settings, ...payload.settings } : data.settings
+})
+
+// store.ts 和 previewApi.ts 共用同一份默认数据，保持结构同步。
+export const createDefaultAppData = (): AppData => ({
+  schemaVersion: 1,
+  groups: DEFAULT_GROUPS.map((group) => ({ ...group })),
+  notes: [],
+  settings: { ...DEFAULT_SETTINGS, window: { ...DEFAULT_SETTINGS.window } }
+})
+
+// 统一的标题提取：取首行非空文本截断，store 和 renderer 共用同一逻辑，避免两处不一致。
+export const makeTitle = (content: string, language: LanguageMode = 'zh'): string => {
+  const line = content.split('\n').find((item) => item.trim())?.trim() ?? ''
+  return line.slice(0, 28) || (language === 'zh' ? '未命名 Note' : 'Untitled Note')
+}
