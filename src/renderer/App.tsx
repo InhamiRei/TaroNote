@@ -23,11 +23,16 @@ import { useNotes } from './useNotes'
 import { useSettings } from './useSettings'
 import { NotesView } from './components/NotesView'
 import { CategoryPicker } from './components/CategoryPicker'
+import { ResizeHandles } from './components/ResizeHandles'
+import { WindowControls } from './components/WindowControls'
 import { SettingsView } from './components/settings/SettingsView'
 
 const taroNoteApi = getTaroNoteApi()
 
 type ViewMode = 'notes' | 'settings'
+
+// 先用浏览器环境给 Windows 一个同步初值，随后仍以主进程返回的平台为准，避免首帧闪一下 mac 窗控。
+const getInitialPlatform = () => (navigator.userAgent.includes('Windows') ? 'win32' : '')
 
 function App() {
   const [data, setData] = useState<AppData | null>(null)
@@ -35,7 +40,10 @@ function App() {
   const [view, setView] = useState<ViewMode>('notes')
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all')
   const { toast, showToast } = useToast()
+  const [platform, setPlatform] = useState(getInitialPlatform)
+  const [maximized, setMaximized] = useState(false)
   const dataLoaded = Boolean(data)
+  const isWindows = platform === 'win32'
   const language = data?.settings.language ?? 'zh'
   const t = messages[language]
   const groupsById = useMemo(() => new Map((data?.groups ?? []).map((group) => [group.id, group])), [data?.groups])
@@ -199,6 +207,20 @@ function App() {
     }
   }, [])
 
+  // 平台与窗口最大化状态：平台决定窗控样式，最大化状态决定窗控图标与去留白/圆角。
+  useEffect(() => {
+    void taroNoteApi.getPlatform().then(setPlatform).catch(() => undefined)
+    void taroNoteApi.isMaximized().then(setMaximized).catch(() => undefined)
+    const removeWindowStateListener = taroNoteApi.onWindowState((state) => setMaximized(state.maximized))
+    return () => removeWindowStateListener()
+  }, [])
+
+  // 平台与最大化状态写到 <html> data 属性，供 CSS 按平台/状态切换留白、圆角、阴影和窗控。
+  useEffect(() => {
+    document.documentElement.dataset.platform = isWindows ? 'win' : 'mac'
+    document.documentElement.dataset.maximized = maximized ? 'true' : 'false'
+  }, [isWindows, maximized])
+
   const theme = data?.settings.theme
   useEffect(() => {
     if (theme) {
@@ -225,13 +247,14 @@ function App() {
         return
       }
 
-      if (event.metaKey && event.key.toLowerCase() === 'n') {
+      // Windows 按要求禁用新建/搜索组合快捷键；macOS 只响应 Cmd，避免 Ctrl 组合误触发。
+      if (!isWindows && event.metaKey && event.key.toLowerCase() === 'n') {
         event.preventDefault()
         openNewNote()
         return
       }
 
-      if (event.metaKey && event.key.toLowerCase() === 'f') {
+      if (!isWindows && event.metaKey && event.key.toLowerCase() === 'f') {
         event.preventDefault()
         setSearchOpen(true)
         return
@@ -284,6 +307,7 @@ function App() {
     filteredNotes,
     handleCopyNote,
     handleDeleteNote,
+    isWindows,
     openNewNote,
     selectedIndex,
     setSearchOpen,
@@ -297,19 +321,23 @@ function App() {
   }
 
   return (
-    <main className="app-shell">
-      <aside className="sidebar">
-        <div className="traffic-lights">
-          <button className="traffic red" aria-label={t.windowClose} onClick={() => void taroNoteApi.closeWindow()}>
-            <X size={8} strokeWidth={3.4} />
-          </button>
-          <button className="traffic yellow" aria-label={t.windowMinimize} onClick={() => void taroNoteApi.minimizeWindow()}>
-            <Minus size={8} strokeWidth={3.8} />
-          </button>
-          <button className="traffic green" aria-label={t.toggleMaximize} onClick={() => void taroNoteApi.toggleMaximize()}>
-            <MoveDiagonal2 size={7} strokeWidth={3.2} />
-          </button>
-        </div>
+    <>
+      {isWindows && <ResizeHandles />}
+      <main className="app-shell">
+        <aside className="sidebar">
+          {!isWindows && (
+            <div className="traffic-lights">
+              <button className="traffic red" aria-label={t.windowClose} onClick={() => void taroNoteApi.closeWindow()}>
+                <X size={8} strokeWidth={3.4} />
+              </button>
+              <button className="traffic yellow" aria-label={t.windowMinimize} onClick={() => void taroNoteApi.minimizeWindow()}>
+                <Minus size={8} strokeWidth={3.8} />
+              </button>
+              <button className="traffic green" aria-label={t.toggleMaximize} onClick={() => void taroNoteApi.toggleMaximize()}>
+                <MoveDiagonal2 size={7} strokeWidth={3.2} />
+              </button>
+            </div>
+          )}
 
         <div className="cloud-title">
           <strong>TaroNote</strong>
@@ -461,6 +489,7 @@ function App() {
             <button className="toolbar-button" title={t.newNote} onClick={openNewNote}>
               <Plus size={20} />
             </button>
+            {isWindows && <WindowControls labels={t} maximized={maximized} />}
           </div>
         </header>
 
@@ -483,6 +512,7 @@ function App() {
           <SettingsView
             settings={data.settings}
             labels={t}
+            isWindows={isWindows}
             updateSetting={updateSetting}
           />
         )}
@@ -582,7 +612,8 @@ function App() {
       )}
 
       {toast && <div className="toast no-drag">{toast}</div>}
-    </main>
+      </main>
+    </>
   )
 }
 

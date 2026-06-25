@@ -23,6 +23,8 @@
   --muted: #767676;
   --soft: #9b9b9b;
   --shadow: 0 12px 28px rgba(0, 0, 0, 0.06);
+  /* 透明无边框窗口的外层投影，配合 #root 透明留白让阴影落在窗口边缘外。 */
+  --window-shadow: 0 18px 48px rgba(0, 0, 0, 0.16);
 }
 
 :root[data-theme="dark"] {
@@ -39,6 +41,7 @@
   --muted: #b0b0b0;
   --soft: #858585;
   --shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+  --window-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
 }
 
 * {
@@ -61,6 +64,11 @@ body,
   margin: 0;
   overflow: hidden;
   background: transparent;
+}
+
+/* macOS 窗口边缘留一圈透明留白，给 app-shell 的投影留空间；Windows 会覆盖为 0。 */
+#root {
+  padding: 12px;
 }
 
 button,
@@ -106,14 +114,108 @@ button {
   min-height: 620px;
   grid-template-columns: @sidebar-width minmax(0, 1fr);
   overflow: hidden;
+  border-radius: 12px;
+  box-shadow: var(--window-shadow);
   color: var(--text);
   background: var(--app-bg);
   -webkit-app-region: no-drag;
 }
 
+/* Windows 用实色矩形窗口：去掉透明留白、圆角和阴影，避免黑边并让最大化填满屏幕。 */
+[data-platform="win"] #root {
+  padding: 0;
+}
+
+[data-platform="win"] .app-shell {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* 最大化时（主要影响 mac 透明窗）去掉留白/圆角/阴影，填满整个屏幕。 */
+[data-maximized="true"] #root {
+  padding: 0;
+}
+
+[data-maximized="true"] .app-shell {
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .no-drag,
 .no-drag * {
   -webkit-app-region: no-drag;
+}
+
+/* Windows 无边框窗口缺少稳定的原生边框缩放，用 8 条不可见边条覆盖窗口边缘驱动主进程改 Bounds。
+   元素只在 Windows 渲染，CSS 对 mac 无影响。 */
+.resize-handles {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.resize-handle {
+  position: absolute;
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+}
+
+.resize-top {
+  top: 0;
+  left: 8px;
+  right: 8px;
+  height: 8px;
+}
+
+.resize-bottom {
+  bottom: 0;
+  left: 8px;
+  right: 8px;
+  height: 8px;
+}
+
+.resize-left {
+  top: 8px;
+  left: 0;
+  bottom: 8px;
+  width: 8px;
+}
+
+.resize-right {
+  top: 8px;
+  right: 0;
+  bottom: 8px;
+  width: 8px;
+}
+
+.resize-top-left,
+.resize-top-right,
+.resize-bottom-left,
+.resize-bottom-right {
+  z-index: 1;
+  width: 14px;
+  height: 14px;
+}
+
+.resize-top-left {
+  top: 0;
+  left: 0;
+}
+
+.resize-top-right {
+  top: 0;
+  right: 0;
+}
+
+.resize-bottom-left {
+  bottom: 0;
+  left: 0;
+}
+
+.resize-bottom-right {
+  bottom: 0;
+  right: 0;
 }
 
 .sidebar {
@@ -437,7 +539,6 @@ button.sidebar-item:hover,
   display: flex;
   height: 70px;
   align-items: center;
-  justify-content: space-between;
   gap: 20px;
   padding: 0 28px;
   background: var(--app-bg);
@@ -447,6 +548,7 @@ button.sidebar-item:hover,
 
 .topbar h1 {
   margin: 0;
+  margin-right: auto;
   color: var(--text);
   font-size: 21px;
   font-weight: 720;
@@ -458,6 +560,12 @@ button.sidebar-item:hover,
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+/* Windows 窗控按钮沿用 toolbar-button 样式，与搜索/新建按钮统一尺寸与 hover；
+   display:contents 让三个按钮直接参与 top-actions 的 flex 间距，不产生单独的容器间距。 */
+.win-controls {
+  display: contents;
 }
 
 .search-cluster {

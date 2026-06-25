@@ -1,7 +1,7 @@
 {
   "name": "taronote",
-  "version": "1.0.2",
-  "description": "A floating macOS Note app for saving reusable phrases.",
+  "version": "1.0.3",
+  "description": "A floating desktop Note app for saving reusable phrases.",
   "author": "Taro",
   "main": "out/main/index.js",
   "type": "module",
@@ -12,7 +12,10 @@
     "build": "npm run typecheck && electron-vite build",
     "preview": "electron-vite preview",
     "app:pack": "npm run build && electron-builder --dir",
-    "dist": "npm run build && electron-builder"
+    "dist": "npm run build && electron-builder",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:all": "npm run build && electron-builder --mac --win"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
@@ -31,22 +34,44 @@
     "typescript": "^5.7.2",
     "vite": "^5.4.11"
   },
-    "build": {
-      "appId": "com.taro.taronote",
-      "productName": "TaroNote",
-      "copyright": "Copyright © 2026 Taro",
-      "artifactName": "${productName}-${version}-${arch}.${ext}",
-      "files": [
-        "out/**/*"
-      ],
-      "mac": {
-        "category": "public.app-category.productivity",
-        "icon": "assets/app-icons/taronote.icns",
-        "target": [
-          "dmg",
-          "zip"
-        ]
-      },
+  "build": {
+    "appId": "com.taro.taronote",
+    "productName": "TaroNote",
+    "copyright": "Copyright © 2026 Taro",
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "files": [
+      "out/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "assets/app-icons/taronote.png",
+        "to": "taronote.png"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "assets/app-icons/taronote.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "icon": "assets/app-icons/taronote.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
+    },
     "directories": {
       "output": "release"
     }

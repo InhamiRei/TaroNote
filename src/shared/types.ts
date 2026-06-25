@@ -61,6 +61,19 @@ export type DialogResult = {
   message?: string
 }
 
+// 缩放方向用四条边标记，组合后可表示四角拖拽；与具体平台无关。
+export type ResizeEdges = {
+  left?: boolean
+  right?: boolean
+  top?: boolean
+  bottom?: boolean
+}
+
+// 窗口状态变化只随最大化/还原推送，渲染层据此切换窗控图标和去除留白/圆角。
+export type WindowState = {
+  maximized: boolean
+}
+
 export type TaroNoteApi = {
   getState: () => Promise<AppData>
   saveData: (payload: SaveDataPayload) => Promise<AppData>
@@ -73,6 +86,14 @@ export type TaroNoteApi = {
   minimizeWindow: () => Promise<void>
   toggleMaximize: () => Promise<void>
   onOpenSettings: (callback: () => void) => () => void
+  // 渲染进程无权读 process.platform，统一由主进程提供，用于按平台开关功能与样式。
+  getPlatform: () => Promise<string>
+  // Windows 无边框窗口没有稳定的原生边框缩放，由渲染层拖拽边条驱动主进程改 Bounds。
+  startResize: (edges: ResizeEdges, pointerX: number, pointerY: number) => Promise<void>
+  resize: (pointerX: number, pointerY: number) => Promise<void>
+  endResize: () => Promise<void>
+  isMaximized: () => Promise<boolean>
+  onWindowState: (callback: (state: WindowState) => void) => () => void
 }
 
 // ── 共享常量与工厂 ──────────────────────────────────────

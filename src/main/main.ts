@@ -1,15 +1,24 @@
 import { app, BrowserWindow, clipboard, dialog, globalShortcut, ipcMain, Menu, nativeImage, Tray } from 'electron'
-import type { OpenDialogOptions, SaveDialogOptions } from 'electron'
+import type { OpenDialogOptions, Rectangle, SaveDialogOptions } from 'electron'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { AppSettings, SaveDataPayload, ShortcutResult } from '../shared/types'
+import type { AppSettings, ResizeEdges, SaveDataPayload, ShortcutResult } from '../shared/types'
 import { getDataPath, TaroNoteStore } from './store'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const APP_NAME = 'TaroNote'
 const APP_AUTHOR = 'Taro'
 const APP_COPYRIGHT = `Copyright © 2026 ${APP_AUTHOR}`
+// 平台标记集中取一次，避免 main 里散落 process.platform 判断。
+const isWindows = process.platform === 'win32'
+// 窗口最小尺寸同时用于 BrowserWindow 配置和自定义缩放约束，避免两处数值漂移。
+// macOS 透明窗口额外预留 #root 留白给 CSS 投影，Windows 实色窗口不需要这圈外边距。
+const APP_SHELL_MIN_WIDTH = 1000
+const APP_SHELL_MIN_HEIGHT = 620
+const WINDOW_SHADOW_PADDING = isWindows ? 0 : 12
+const MIN_WINDOW_WIDTH = APP_SHELL_MIN_WIDTH + WINDOW_SHADOW_PADDING * 2
+const MIN_WINDOW_HEIGHT = APP_SHELL_MIN_HEIGHT + WINDOW_SHADOW_PADDING * 2
 
 app.setName(APP_NAME)
 
@@ -19,13 +28,17 @@ let store: TaroNoteStore
 let isQuitting = false
 let activeShortcut = ''
 let boundsSaveTimer: NodeJS.Timeout | undefined
+// Windows 无边框窗口没有稳定的原生边框缩放，由渲染层拖拽边条时记录起点，再按指针位移改Bounds。
+let resizeSession: { edges: ResizeEdges; startX: number; startY: number; bounds: Rectangle } | null = null
 
-// Dock 和窗口图标优先使用项目里的 PNG；打包后则回退到 app 资源目录里的 icns。
+// Dock 和窗口图标优先用项目里的 PNG；打包后回退到 extraResources 拷进 resources 的 taronote.png。
+// 用 PNG 而非 icns/ico 是因为后者各平台互不兼容，且 ico 在 Windows 打包时只嵌进 exe、
+// 不会作为单独文件落进 resourcesPath，PNG 则通过 extraResources 在两端都可用。
 const createAppIcon = () => {
   const iconPaths = [
     path.resolve(__dirname, '../../assets/app-icons/taronote.png'),
     path.resolve(process.cwd(), 'assets/app-icons/taronote.png'),
-    path.join(process.resourcesPath, 'icon.icns')
+    path.join(process.resourcesPath, 'taronote.png')
   ]
   const iconPath = iconPaths.find((candidate) => existsSync(candidate))
 
@@ -83,6 +96,10 @@ const applyRuntimeSettings = (settings: AppSettings) => {
   if (mainWindow) {
     mainWindow.setAlwaysOnTop(settings.alwaysOnTop, 'floating')
     mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+    // Windows 实色窗口会在启动和主题切换瞬间露出背景色，随主题同步可避免闪白/闪黑。
+    if (isWindows) {
+      mainWindow.setBackgroundColor(settings.theme === 'dark' ? '#202020' : '#f7f7f7')
+    }
   }
 
   if (process.platform === 'darwin') {
@@ -108,6 +125,11 @@ const registerGlobalShortcut = (shortcut: string, fallbackShortcut?: string): Sh
   if (activeShortcut) {
     globalShortcut.unregister(activeShortcut)
     activeShortcut = ''
+  }
+
+  // Windows 上按要求不启用快捷键：不注册全局快捷键，但返回成功，避免普通设置保存被快捷键逻辑回滚。
+  if (isWindows) {
+    return { ok: true, shortcut }
   }
 
   const ok = globalShortcut.register(shortcut, toggleMainWindow)
@@ -158,6 +180,34 @@ const scheduleWindowBoundsSave = () => {
   }, 300)
 }
 
+// 根据起始Bounds和指针位移计算新尺寸，四条边各自独立并强制最小尺寸，
+// 始终基于起始Bounds+总位移计算，避免连续移动时误差累积。
+const applyResize = (bounds: Rectangle, edges: ResizeEdges, dx: number, dy: number): Rectangle => {
+  let { x, y, width, height } = bounds
+
+  if (edges.right) {
+    width = Math.max(MIN_WINDOW_WIDTH, bounds.width + dx)
+  }
+
+  if (edges.bottom) {
+    height = Math.max(MIN_WINDOW_HEIGHT, bounds.height + dy)
+  }
+
+  if (edges.left) {
+    const nextWidth = Math.max(MIN_WINDOW_WIDTH, bounds.width - dx)
+    x = bounds.x + (bounds.width - nextWidth)
+    width = nextWidth
+  }
+
+  if (edges.top) {
+    const nextHeight = Math.max(MIN_WINDOW_HEIGHT, bounds.height - dy)
+    y = bounds.y + (bounds.height - nextHeight)
+    height = nextHeight
+  }
+
+  return { x, y, width, height }
+}
+
 // 悬浮窗保持轻量、无标题栏、可置顶，视觉由渲染进程负责。
 const createMainWindow = () => {
   const settings = store.get().settings
@@ -168,14 +218,16 @@ const createMainWindow = () => {
     y: window.y,
     width: window.width,
     height: window.height,
-    minWidth: 1000,
-    minHeight: 620,
+    minWidth: MIN_WINDOW_WIDTH,
+    minHeight: MIN_WINDOW_HEIGHT,
     frame: false,
-    transparent: true,
+    // macOS 用透明窗口做圆角 + CSS 阴影；Windows 透明无边框会有黑边/合成异常，改用实色矩形窗口。
+    transparent: !isWindows,
     show: false,
     resizable: true,
     alwaysOnTop: settings.alwaysOnTop,
-    backgroundColor: '#00000000',
+    backgroundColor: isWindows ? (settings.theme === 'dark' ? '#202020' : '#f7f7f7') : '#00000000',
+    hasShadow: false,
     title: APP_NAME,
     icon: createAppIcon(),
     trafficLightPosition: { x: 14, y: 14 },
@@ -195,6 +247,16 @@ const createMainWindow = () => {
 
   mainWindow.on('move', scheduleWindowBoundsSave)
   mainWindow.on('resize', scheduleWindowBoundsSave)
+
+  // 最大化/还原时通知渲染层：切换窗控图标，并去掉留白/圆角/阴影以填满屏幕。
+  const sendWindowState = () => {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      return
+    }
+    mainWindow.webContents.send('window:state', { maximized: mainWindow.isMaximized() })
+  }
+  mainWindow.on('maximize', sendWindowState)
+  mainWindow.on('unmaximize', sendWindowState)
 
   mainWindow.on('close', (event) => {
     const settings = store.get().settings
@@ -402,6 +464,39 @@ const registerIpcHandlers = () => {
       mainWindow.maximize()
     }
   })
+
+  // 渲染进程不能直接读 process.platform，统一由主进程提供，用于按平台开关功能。
+  ipcMain.handle('system:get-platform', () => process.platform)
+
+  // 以下三个通道仅在 Windows 上由渲染层边条调用：无边框窗口缺少稳定的原生边框缩放。
+  ipcMain.handle('window:resize-start', (_event, edges: ResizeEdges, pointerX: number, pointerY: number) => {
+    if (!mainWindow) {
+      return
+    }
+
+    resizeSession = {
+      edges,
+      startX: pointerX,
+      startY: pointerY,
+      bounds: mainWindow.getBounds()
+    }
+  })
+
+  ipcMain.handle('window:resize', (_event, pointerX: number, pointerY: number) => {
+    if (!mainWindow || !resizeSession) {
+      return
+    }
+
+    const { edges, startX, startY, bounds } = resizeSession
+    mainWindow.setBounds(applyResize(bounds, edges, pointerX - startX, pointerY - startY))
+  })
+
+  ipcMain.handle('window:resize-end', () => {
+    resizeSession = null
+  })
+
+  // 窗控按钮需要知道当前是否最大化，以切换最大化/还原图标。
+  ipcMain.handle('window:is-maximized', () => mainWindow?.isMaximized() ?? false)
 }
 
 app.whenReady().then(() => {

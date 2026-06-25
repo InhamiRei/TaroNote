@@ -100,5 +100,12 @@ const createPreviewApi = (): TaroNoteApi => ({
   closeWindow: async () => undefined,
   minimizeWindow: async () => undefined,
   toggleMaximize: async () => undefined,
+  // 浏览器预览按 mac 行为展示，缩放相关通道无窗口可操作，留空实现以满足类型。
+  getPlatform: async () => 'darwin',
+  startResize: async () => undefined,
+  resize: async () => undefined,
+  endResize: async () => undefined,
+  isMaximized: async () => false,
+  onWindowState: () => () => undefined,
   onOpenSettings: () => () => undefined
 })
