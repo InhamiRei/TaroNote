@@ -470,25 +470,30 @@ function App() {
         <header className="topbar">
           <h1>{currentViewTitle}</h1>
           <div className="top-actions no-drag">
-            <div className="search-cluster" ref={searchPanelRef}>
-              {searchOpen && view === 'notes' && (
-                <label className="inline-search">
-                  <Search size={16} />
-                  <input ref={searchInputRef} value={searchText} onChange={(event) => setSearchText(event.target.value)} />
-                  {searchText && (
-                    <button onClick={() => setSearchText('')}>
-                      <X size={14} />
-                    </button>
+            {/* 设置页不展示笔记操作入口，避免右上角出现搜索和新建按钮。 */}
+            {view === 'notes' && (
+              <>
+                <div className="search-cluster" ref={searchPanelRef}>
+                  {searchOpen && (
+                    <label className="inline-search">
+                      <Search size={16} />
+                      <input ref={searchInputRef} value={searchText} onChange={(event) => setSearchText(event.target.value)} />
+                      {searchText && (
+                        <button onClick={() => setSearchText('')}>
+                          <X size={14} />
+                        </button>
+                      )}
+                    </label>
                   )}
-                </label>
-              )}
-              <button className="toolbar-button" title={t.search} onClick={() => setSearchOpen((open) => !open)}>
-                <Search size={18} />
-              </button>
-            </div>
-            <button className="toolbar-button" title={t.newNote} onClick={openNewNote}>
-              <Plus size={20} />
-            </button>
+                  <button className="toolbar-button" title={t.search} onClick={() => setSearchOpen((open) => !open)}>
+                    <Search size={18} />
+                  </button>
+                </div>
+                <button className="toolbar-button" title={t.newNote} onClick={openNewNote}>
+                  <Plus size={20} />
+                </button>
+              </>
+            )}
             {isWindows && <WindowControls labels={t} maximized={maximized} />}
           </div>
         </header>
