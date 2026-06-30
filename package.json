@@ -1,6 +1,6 @@
 {
   "name": "taronote",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A floating desktop Note app for saving reusable phrases.",
   "author": "Taro",
   "main": "out/main/index.js",
