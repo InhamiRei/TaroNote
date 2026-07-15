@@ -1,54 +1,54 @@
-import { useState, useEffect, useRef } from 'react'
-import { Pencil } from 'lucide-react'
-import type { AppLabels } from '../../i18n'
-import { formatShortcut, modifierOnlyKeys, buildShortcutFromEvent } from '../../utils'
+import { useState, useEffect, useRef } from 'react';
+import { Pencil } from 'lucide-react';
+import type { AppLabels } from '../../i18n';
+import { formatShortcut, modifierOnlyKeys, buildShortcutFromEvent } from '../../utils';
 
 type ShortcutSettingProps = {
-  labels: AppLabels
-  shortcut: string
-  onShortcutChange: (shortcut: string) => Promise<void>
-}
+  labels: AppLabels;
+  shortcut: string;
+  onShortcutChange: (shortcut: string) => Promise<void>;
+};
 
 // 快捷键设置在本地捕获键盘事件，再把合法组合键交给主进程注册。
 export function ShortcutSetting({ labels, shortcut, onShortcutChange }: ShortcutSettingProps) {
-  const [isEditing, setIsEditing] = useState(false)
-  const [captureError, setCaptureError] = useState('')
-  const captureButtonRef = useRef<HTMLButtonElement>(null)
+  const [isEditing, setIsEditing] = useState(false);
+  const [captureError, setCaptureError] = useState('');
+  const captureButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!isEditing) {
-      return
+      return;
     }
 
-    setCaptureError('')
-    window.requestAnimationFrame(() => captureButtonRef.current?.focus())
-  }, [isEditing])
+    setCaptureError('');
+    window.requestAnimationFrame(() => captureButtonRef.current?.focus());
+  }, [isEditing]);
 
   // 录入按钮只负责捕获组合键，保存仍交给设置统一入口处理。
   const handleShortcutKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
-    event.preventDefault()
-    event.stopPropagation()
+    event.preventDefault();
+    event.stopPropagation();
 
     if (event.key === 'Escape') {
-      setIsEditing(false)
-      setCaptureError('')
-      return
+      setIsEditing(false);
+      setCaptureError('');
+      return;
     }
 
     if (modifierOnlyKeys.has(event.key)) {
-      return
+      return;
     }
 
-    const nextShortcut = buildShortcutFromEvent(event)
+    const nextShortcut = buildShortcutFromEvent(event);
     if (!nextShortcut) {
-      setCaptureError(labels.shortcutNeedModifier)
-      return
+      setCaptureError(labels.shortcutNeedModifier);
+      return;
     }
 
-    setIsEditing(false)
-    setCaptureError('')
-    void onShortcutChange(nextShortcut)
-  }
+    setIsEditing(false);
+    setCaptureError('');
+    void onShortcutChange(nextShortcut);
+  };
 
   return (
     <div className="shortcut-table">
@@ -86,5 +86,5 @@ export function ShortcutSetting({ labels, shortcut, onShortcutChange }: Shortcut
         </div>
       </div>
     </div>
-  )
+  );
 }

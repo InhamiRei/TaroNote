@@ -1,13 +1,13 @@
-import { Copy, Minus, Square, X } from 'lucide-react'
-import type { AppLabels } from '../i18n'
-import { getTaroNoteApi } from '../previewApi'
+import { Copy, Minus, Square, X } from 'lucide-react';
+import type { AppLabels } from '../i18n';
+import { getTaroNoteApi } from '../previewApi';
 
-const taroNoteApi = getTaroNoteApi()
+const taroNoteApi = getTaroNoteApi();
 
 type WindowControlsProps = {
-  labels: AppLabels
-  maximized: boolean
-}
+  labels: AppLabels;
+  maximized: boolean;
+};
 
 // Windows 窗控按钮沿用 toolbar-button 样式（28px、同款 hover），与搜索/新建按钮视觉一致；
 // 外层 win-controls 用 display:contents，让三个按钮直接参与 top-actions 的 flex 间距。
@@ -24,5 +24,5 @@ export function WindowControls({ labels, maximized }: WindowControlsProps) {
         <X size={16} strokeWidth={2} />
       </button>
     </div>
-  )
+  );
 }

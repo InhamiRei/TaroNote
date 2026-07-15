@@ -4,6 +4,8 @@ coverage
 node_modules
 *.md
 dist
+out
+release
 package-lock.json
 public
 config

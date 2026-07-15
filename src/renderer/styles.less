@@ -8,7 +8,15 @@
 :root {
   color-scheme: light;
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'SF Pro Text',
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   --app-bg: #f7f7f7;
@@ -25,7 +33,7 @@
   --shadow: 0 12px 28px rgba(0, 0, 0, 0.06);
 }
 
-:root[data-theme="dark"] {
+:root[data-theme='dark'] {
   color-scheme: dark;
   --app-bg: #202020;
   --sidebar-bg: #252525;
@@ -113,12 +121,12 @@ button {
 }
 
 /* Windows 用实色矩形窗口：去掉圆角，避免黑边并让最大化填满屏幕。 */
-[data-platform="win"] .app-shell {
+[data-platform='win'] .app-shell {
   border-radius: 0;
 }
 
 /* 最大化时去掉圆角，填满整个屏幕。 */
-[data-maximized="true"] .app-shell {
+[data-maximized='true'] .app-shell {
   border-radius: 0;
 }
 
@@ -339,7 +347,7 @@ button.sidebar-item {
   transform: translateX(4px);
 }
 
-:root[data-theme="dark"] .sidebar-item {
+:root[data-theme='dark'] .sidebar-item {
   color: var(--text);
 }
 
@@ -392,7 +400,7 @@ button.sidebar-item:hover,
   position: relative;
 }
 
-:root[data-theme="dark"] .category-row {
+:root[data-theme='dark'] .category-row {
   color: var(--text);
 }
 
@@ -769,11 +777,15 @@ button.sidebar-item:hover,
 }
 
 .note-card.drop-above {
-  box-shadow: 0 -3px 0 0 var(--line-strong), var(--shadow);
+  box-shadow:
+    0 -3px 0 0 var(--line-strong),
+    var(--shadow);
 }
 
 .note-card.drop-below {
-  box-shadow: 0 3px 0 0 var(--line-strong), var(--shadow);
+  box-shadow:
+    0 3px 0 0 var(--line-strong),
+    var(--shadow);
 }
 
 .note-card[draggable] {
@@ -977,12 +989,12 @@ button.sidebar-item:hover,
   background: #d0d0d0;
 }
 
-:root[data-theme="dark"] .switch {
+:root[data-theme='dark'] .switch {
   background: #555555;
   border-color: #666666;
 }
 
-:root[data-theme="dark"] .switch:not(.checked):hover {
+:root[data-theme='dark'] .switch:not(.checked):hover {
   background: #606060;
 }
 

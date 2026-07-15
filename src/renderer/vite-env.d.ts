@@ -1,9 +1,9 @@
 /// <reference types="vite/client" />
 
-import type { TaroNoteApi } from '../shared/types'
+import type { TaroNoteApi } from '../shared/types';
 
 declare global {
   interface Window {
-    taroNote?: TaroNoteApi
+    taroNote?: TaroNoteApi;
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "taronote",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A floating desktop Note app for saving reusable phrases.",
   "author": "Taro",
   "main": "out/main/index.js",
@@ -15,7 +15,9 @@
     "dist": "npm run build && electron-builder",
     "dist:mac": "npm run build && electron-builder --mac",
     "dist:win": "npm run build && electron-builder --win",
-    "dist:all": "npm run build && electron-builder --mac --win"
+    "dist:all": "npm run build && electron-builder --mac --win",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
@@ -31,6 +33,7 @@
     "electron-builder": "^25.1.8",
     "electron-vite": "^2.3.0",
     "less": "^4.6.4",
+    "prettier": "^3.9.5",
     "typescript": "^5.7.2",
     "vite": "^5.4.11"
   },

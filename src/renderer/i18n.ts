@@ -12,7 +12,8 @@ export const messages = {
     categoryName: '分类名称',
     categoryRenamed: '分类已修改',
     deleteCategoryConfirm: (name: string) => `删除分类「${name}」？`,
-    deleteCategoryNotesConfirm: (count: number) => `这个分类里有 ${count} 条 Note。\n点击「确定」：删除分类和这些 Note。\n点击「取消」：只删除分类，Note 移动到默认分类。`,
+    deleteCategoryNotesConfirm: (count: number) =>
+      `这个分类里有 ${count} 条 Note。\n点击「确定」：删除分类和这些 Note。\n点击「取消」：只删除分类，Note 移动到默认分类。`,
     categoryNamePrompt: '输入分类名称',
     closeToTray: '关闭时留在菜单栏',
     contentRequired: '内容不能为空',
@@ -63,7 +64,7 @@ export const messages = {
     windowClose: '关闭窗口',
     windowMinimize: '最小化窗口',
     zh: '中文',
-    en: 'English'
+    en: 'English',
   },
   en: {
     addCategory: 'New Category',
@@ -78,7 +79,8 @@ export const messages = {
     categoryName: 'Category Name',
     categoryRenamed: 'Category renamed',
     deleteCategoryConfirm: (name: string) => `Delete "${name}"?`,
-    deleteCategoryNotesConfirm: (count: number) => `This category contains ${count} Notes.\nOK: delete the category and those Notes.\nCancel: delete only the category and move Notes to the default category.`,
+    deleteCategoryNotesConfirm: (count: number) =>
+      `This category contains ${count} Notes.\nOK: delete the category and those Notes.\nCancel: delete only the category and move Notes to the default category.`,
     categoryNamePrompt: 'Enter category name',
     closeToTray: 'Keep in Menu Bar on Close',
     contentRequired: 'Content is required',
@@ -129,8 +131,8 @@ export const messages = {
     windowClose: 'Close Window',
     windowMinimize: 'Minimize Window',
     zh: '中文',
-    en: 'English'
-  }
-}
+    en: 'English',
+  },
+};
 
-export type AppLabels = (typeof messages)['zh']
+export type AppLabels = (typeof messages)['zh'];

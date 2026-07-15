@@ -1,5 +1,5 @@
-import { contextBridge, ipcRenderer } from 'electron'
-import type { AppSettings, SaveDataPayload, TaroNoteApi } from '../shared/types'
+import { contextBridge, ipcRenderer } from 'electron';
+import type { AppSettings, SaveDataPayload, TaroNoteApi } from '../shared/types';
 
 // preload 只暴露白名单 API，渲染进程不能直接访问 Node 或 Electron 原生模块。
 const api: TaroNoteApi = {
@@ -19,16 +19,16 @@ const api: TaroNoteApi = {
   endResize: () => ipcRenderer.invoke('window:resize-end'),
   isMaximized: () => ipcRenderer.invoke('window:is-maximized'),
   onWindowState: (callback) => {
-    const listener = (_event: unknown, state: { maximized: boolean }) => callback(state)
-    ipcRenderer.on('window:state', listener)
-    return () => ipcRenderer.removeListener('window:state', listener)
+    const listener = (_event: unknown, state: { maximized: boolean }) => callback(state);
+    ipcRenderer.on('window:state', listener);
+    return () => ipcRenderer.removeListener('window:state', listener);
   },
   // 监听主进程菜单事件，并返回清理函数，避免热更新时重复绑定。
   onOpenSettings: (callback) => {
-    const listener = () => callback()
-    ipcRenderer.on('ui:open-settings', listener)
-    return () => ipcRenderer.removeListener('ui:open-settings', listener)
-  }
-}
+    const listener = () => callback();
+    ipcRenderer.on('ui:open-settings', listener);
+    return () => ipcRenderer.removeListener('ui:open-settings', listener);
+  },
+};
 
-contextBridge.exposeInMainWorld('taroNote', api)
+contextBridge.exposeInMainWorld('taroNote', api);

@@ -1,8 +1,8 @@
 type SettingToggleProps = {
-  label: string
-  checked: boolean
-  onChange: (checked: boolean) => void
-}
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+};
 
 // 设置开关保持受控状态，点击后立刻走统一设置保存流程。
 export function SettingToggle({ label, checked, onChange }: SettingToggleProps) {
@@ -13,5 +13,5 @@ export function SettingToggle({ label, checked, onChange }: SettingToggleProps) 
         <span />
       </button>
     </div>
-  )
+  );
 }

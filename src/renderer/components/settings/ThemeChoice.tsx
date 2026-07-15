@@ -1,12 +1,12 @@
-import type { ThemeMode } from '../../../shared/types'
+import type { ThemeMode } from '../../../shared/types';
 
 type ThemeChoiceProps = {
-  label: string
-  value: ThemeMode
-  current: ThemeMode
-  icon: React.ReactNode
-  onSelect: (theme: ThemeMode) => void
-}
+  label: string;
+  value: ThemeMode;
+  current: ThemeMode;
+  icon: React.ReactNode;
+  onSelect: (theme: ThemeMode) => void;
+};
 
 // 主题选择项用预览缩略图表达结果，比单纯文字按钮更直观。
 export function ThemeChoice({ label, value, current, icon, onSelect }: ThemeChoiceProps) {
@@ -21,5 +21,5 @@ export function ThemeChoice({ label, value, current, icon, onSelect }: ThemeChoi
       </div>
       <strong>{label}</strong>
     </button>
-  )
+  );
 }
