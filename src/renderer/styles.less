@@ -23,8 +23,6 @@
   --muted: #767676;
   --soft: #9b9b9b;
   --shadow: 0 12px 28px rgba(0, 0, 0, 0.06);
-  /* 透明无边框窗口的外层投影，配合 #root 透明留白让阴影落在窗口边缘外。 */
-  --window-shadow: 0 18px 48px rgba(0, 0, 0, 0.16);
 }
 
 :root[data-theme="dark"] {
@@ -41,7 +39,6 @@
   --muted: #b0b0b0;
   --soft: #858585;
   --shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
-  --window-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
 }
 
 * {
@@ -64,11 +61,6 @@ body,
   margin: 0;
   overflow: hidden;
   background: transparent;
-}
-
-/* macOS 窗口边缘留一圈透明留白，给 app-shell 的投影留空间；Windows 会覆盖为 0。 */
-#root {
-  padding: 12px;
 }
 
 button,
@@ -115,30 +107,19 @@ button {
   grid-template-columns: @sidebar-width minmax(0, 1fr);
   overflow: hidden;
   border-radius: 12px;
-  box-shadow: var(--window-shadow);
   color: var(--text);
   background: var(--app-bg);
   -webkit-app-region: no-drag;
 }
 
-/* Windows 用实色矩形窗口：去掉透明留白、圆角和阴影，避免黑边并让最大化填满屏幕。 */
-[data-platform="win"] #root {
-  padding: 0;
-}
-
+/* Windows 用实色矩形窗口：去掉圆角，避免黑边并让最大化填满屏幕。 */
 [data-platform="win"] .app-shell {
   border-radius: 0;
-  box-shadow: none;
 }
 
-/* 最大化时（主要影响 mac 透明窗）去掉留白/圆角/阴影，填满整个屏幕。 */
-[data-maximized="true"] #root {
-  padding: 0;
-}
-
+/* 最大化时去掉圆角，填满整个屏幕。 */
 [data-maximized="true"] .app-shell {
   border-radius: 0;
-  box-shadow: none;
 }
 
 .no-drag,
