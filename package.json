@@ -1,6 +1,6 @@
 {
   "name": "taronote",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A floating desktop Note app for saving reusable phrases.",
   "author": "Taro",
   "main": "out/main/index.js",
@@ -53,14 +53,14 @@
     ],
     "mac": {
       "category": "public.app-category.productivity",
-      "icon": "assets/app-icons/taronote.icns",
+      "icon": "assets/app-icons/taronote.png",
       "target": [
         "dmg",
         "zip"
       ]
     },
     "win": {
-      "icon": "assets/app-icons/taronote.ico",
+      "icon": "assets/app-icons/taronote.png",
       "target": [
         {
           "target": "nsis",

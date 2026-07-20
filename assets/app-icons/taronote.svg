@@ -1,7 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="TaroNote stack lines icon">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="TaroNote minimal notepad icon">
+  <!-- 使用透明外沿与白色圆角底板，适配 macOS 和 Windows 应用图标。 -->
   <rect x="104" y="104" width="816" height="816" rx="176" fill="#fbfbfb"/>
-  <path d="M314 392H662" fill="none" stroke="#08080a" stroke-width="46" stroke-linecap="round"/>
-  <path d="M314 518H706" fill="none" stroke="#08080a" stroke-width="46" stroke-linecap="round"/>
-  <path d="M314 646H602" fill="none" stroke="#08080a" stroke-width="46" stroke-linecap="round"/>
-  <path d="M674 638L736 700" fill="none" stroke="#08080a" stroke-width="46" stroke-linecap="round"/>
+
+  <!-- 统一采用轻量圆角线条，保持小尺寸下的清晰度。 -->
+  <rect x="318" y="286" width="388" height="466" rx="58" fill="none" stroke="#08080a" stroke-width="24"/>
+  <path d="M436 252V322M588 252V322" fill="none" stroke="#08080a" stroke-width="24" stroke-linecap="round"/>
+  <path d="M400 440H624M400 536H624" fill="none" stroke="#08080a" stroke-width="24" stroke-linecap="round"/>
+  <path d="M400 632H574C596 632 613 625 626 610" fill="none" stroke="#08080a" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
